@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emissão de NFS-e</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .error {
+            color: red;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Emissão de Nota Fiscal de Serviço (NFS-e)</h1>
+        <form id="nfse-form">
+            <div class="form-group">
+                <label for="valorVenda">Valor da Venda (R$):</label>
+                <input type="number" id="valorVenda" required step="0.01">
+                <span class="error" id="error-valorVenda"></span>
+            </div>
+            <div class="form-group">
+                <label for="itens">Itens Vendidos:</label>
+                <textarea id="itens" rows="4" required></textarea>
+                <span class="error" id="error-itens"></span>
+            </div>
+            <div class="form-group">
+                <label for="irpf">Porcentagem IRPF (%):</label>
+                <input type="number" id="irpf" required step="0.01">
+                <span class="error" id="error-irpf"></span>
+            </div>
+            <div class="form-group">
+                <label for="pis">Porcentagem PIS (%):</label>
+                <input type="number" id="pis" required step="0.01">
+                <span class="error" id="error-pis"></span>
+            </div>
+            <div class="form-group">
+                <label for="cofins">Porcentagem COFINS (%):</label>
+                <input type="number" id="cofins" required step="0.01">
+                <span class="error" id="error-cofins"></span>
+            </div>
+            <div class="form-group">
+                <label for="inss">Porcentagem INSS (%):</label>
+                <input type="number" id="inss" required step="0.01">
+                <span class="error" id="error-inss"></span>
+            </div>
+            <div class="form-group">
+                <label for="issqn">Porcentagem ISSQN (%):</label>
+                <input type="number" id="issqn" required step="0.01">
+                <span class="error" id="error-issqn"></span>
+            </div>
+            <button type="button" onclick="handleSubmit()">Gerar Nota Fiscal</button>
+        </form>
+
+        <div id="notaFiscal" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        function calcularImposto(valor, porcentagem) {
+            return (valor * porcentagem) / 100;
+        }
+
+        function validarCampos() {
+            let isValid = true;
+            const valorVenda = document.getElementById('valorVenda');
+            const itens = document.getElementById('itens');
+            const porcentagens = ['irpf', 'pis', 'cofins', 'inss', 'issqn'];
+
+            // Reset errors
+            document.querySelectorAll('.error').forEach(error => error.textContent = '');
+
+            if (!valorVenda.value || parseFloat(valorVenda.value) <= 0) {
+                document.getElementById('error-valorVenda').textContent = 'Insira um valor válido.';
+                isValid = false;
+            }
+
+            if (!itens.value.trim()) {
+                document.getElementById('error-itens').textContent = 'Descreva os itens vendidos.';
+                isValid = false;
+            }
+
+            porcentagens.forEach(id => {
+                const field = document.getElementById(id);
+                if (!field.value || parseFloat(field.value) < 0) {
+                    document.getElementById(`error-${id}`).textContent = 'Insira uma porcentagem válida.';
+                    isValid = false;
+                }
+            });
+
+            return isValid;
+        }
+
+        function exibirNotaFiscal(valorVenda, itens, impostos, totalImpostos, valorLiquido) {
+            const notaFiscalDiv = document.getElementById('notaFiscal');
+            notaFiscalDiv.style.display = 'block';
+            notaFiscalDiv.innerHTML = `
+                <h2>Nota Fiscal de Serviço</h2>
+                <p><strong>Valor da Venda:</strong> R$ ${valorVenda.toFixed(2)}</p>
+                <p><strong>Itens Vendidos:</strong> ${itens}</p>
+                <p><strong>Impostos Calculados:</strong></p>
+                <ul>
+                    <li>IRPF: R$ ${impostos.irpf.toFixed(2)}</li>
+                    <li>PIS: R$ ${impostos.pis.toFixed(2)}</li>
+                    <li>COFINS: R$ ${impostos.cofins.toFixed(2)}</li>
+                    <li>INSS: R$ ${impostos.inss.toFixed(2)}</li>
+                    <li>ISSQN: R$ ${impostos.issqn.toFixed(2)}</li>
+                </ul>
+                <p><strong>Total de Impostos:</strong> R$ ${totalImpostos.toFixed(2)}</p>
+                <p><strong>Valor Líquido:</strong> R$ ${valorLiquido.toFixed(2)}</p>
+            `;
+        }
+
+        function handleSubmit() {
+            if (!validarCampos()) return;
+
+            const valorVenda = parseFloat(document.getElementById('valorVenda').value);
+            const itens = document.getElementById('itens').value;
+            const irpf = parseFloat(document.getElementById('irpf').value);
+            const pis = parseFloat(document.getElementById('pis').value);
+            const cofins = parseFloat(document.getElementById('cofins').value);
+            const inss = parseFloat(document.getElementById('inss').value);
+            const issqn = parseFloat(document.getElementById('issqn').value);
+
+            const impostos = {
+                irpf: calcularImposto(valorVenda, irpf),
+                pis: calcularImposto(valorVenda, pis),
+                cofins: calcularImposto(valorVenda, cofins),
+                inss: calcularImposto(valorVenda, inss),
+                issqn: calcularImposto(valorVenda, issqn)
+            };
+
+            const totalImpostos = Object.values(impostos).reduce((acc, curr) => acc + curr, 0);
+            const valorLiquido = valorVenda - totalImpostos;
+
+            exibirNotaFiscal(valorVenda, itens, impostos, totalImpostos, valorLiquido);
+        }
+    </script>
+</body>
+</html>
